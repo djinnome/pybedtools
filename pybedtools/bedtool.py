@@ -14,10 +14,10 @@ from pybedtools.helpers import get_tempdir, _tags,\
     History, HistoryStep, call_bedtools, _flatten_list, \
     _check_sequence_stderr, isBAM, isBGZIP, BEDToolsError, \
     _call_randomintersect
-import helpers
+from . import helpers
 from cbedtools import IntervalFile, IntervalIterator, Interval
 import pybedtools
-import settings
+from . import settings
 
 
 _implicit_registry = {}
@@ -249,7 +249,7 @@ def _wraps(prog=None, implicit=None, bam=None, other=None, uses_genome=False,
             # the sequence methods to add a `seqfn` attribute to the resulting
             # BedTool.
             if add_to_bedtool is not None:
-                for kw, attr in add_to_bedtool.items():
+                for kw, attr in list(add_to_bedtool.items()):
                     if kw == 'stdout':
                         value = stream
                     else:
@@ -277,7 +277,7 @@ def _wraps(prog=None, implicit=None, bam=None, other=None, uses_genome=False,
             # keep the nonbam arg passed into the original _wraps() decorator
             # in scope.
             if nonbam is not None and nonbam != 'ALL':
-                if isinstance(nonbam, basestring):
+                if isinstance(nonbam, str):
                     _nonbam = [nonbam]
                 else:
                     _nonbam = nonbam
@@ -376,7 +376,7 @@ class BedTool(object):
                 fn = fn.fn
 
             # from_string=False, so assume it's a filename
-            elif isinstance(fn, basestring):
+            elif isinstance(fn, str):
                 if remote:
                     self._isbam = True
                 else:
@@ -394,12 +394,12 @@ class BedTool(object):
             else:
                 fn = fn
 
-        if isinstance(fn, unicode):
+        if isinstance(fn, str):
             fn = str(fn)
 
         self.fn = fn
 
-        if self._isbam and isinstance(self.fn, basestring):
+        if self._isbam and isinstance(self.fn, str):
             if not self.remote:
                 try:
                     self._bam_header = ''.join(BAM(self.fn, header_only=True))
@@ -412,7 +412,7 @@ class BedTool(object):
         else:
             self._bam_header = ""
 
-        tag = ''.join([random.choice(string.lowercase) for _ in xrange(8)])
+        tag = ''.join([random.choice(string.lowercase) for _ in range(8)])
         self._tag = tag
         _tags[tag] = self
         self._hascounts = False
@@ -457,12 +457,12 @@ class BedTool(object):
         if isinstance(genome, dict):
             chromdict = genome
         else:
-            assert isinstance(genome, basestring)
+            assert isinstance(genome, str)
             chromdict = pybedtools.chromsizes(genome)
 
         tmp = self._tmp()
         fout = open(tmp, 'w')
-        for chrom, coords in chromdict.items():
+        for chrom, coords in list(chromdict.items()):
             start, stop = coords
             start = str(start)
             stop = str(stop)
@@ -545,7 +545,7 @@ class BedTool(object):
         pointing to a BGZIPed file with a .tbi file in the same dir.
         """
         if (
-            isinstance(self.fn, basestring)
+            isinstance(self.fn, str)
             and
             isBGZIP(self.fn)
             and
@@ -574,7 +574,7 @@ class BedTool(object):
             force_arg = ""
 
         # It may already be BGZIPed...
-        if isinstance(self.fn, basestring) and not force:
+        if isinstance(self.fn, str) and not force:
             if isBGZIP(self.fn):
                 return self.fn
 
@@ -815,17 +815,17 @@ class BedTool(object):
                 # 5' utr between gene start and first intron
                 if i == 0 and exon.start > g.start:
                     utr = {"+": "utr5", "-": "utr3"}[g.strand]
-                    print >>fh, "%s\t%i\t%i\t%s\t%s\t%s" \
-                        % (g.chrom, g.start, exon.start, g.name, utr, g.strand)
+                    print("%s\t%i\t%i\t%s\t%s\t%s" \
+                        % (g.chrom, g.start, exon.start, g.name, utr, g.strand), file=fh)
                 elif i == len(exons) - 1 and exon.end < g.end:
                     utr = {"+": "utr3", "-": "utr5"}[g.strand]
-                    print >>fh, "%s\t%i\t%i\t%s\t%s\t%s" \
-                        % (g.chrom, exon.end, g.end, g.name, utr, g.strand)
+                    print("%s\t%i\t%i\t%s\t%s\t%s" \
+                        % (g.chrom, exon.end, g.end, g.name, utr, g.strand), file=fh)
                 elif i != len(exons) - 1:
                     istart = exon.end
                     iend = exons[i + 1].start
-                    print >>fh, "%s\t%i\t%i\t%s\tintron\t%s" \
-                        % (g.chrom, istart, iend, g.name, g.strand)
+                    print("%s\t%i\t%i\t%s\tintron\t%s" \
+                        % (g.chrom, istart, iend, g.name, g.strand), file=fh)
         fh.close()
         return BedTool(fh.name)
 
@@ -846,7 +846,7 @@ class BedTool(object):
         'bed'
         """
         if self._file_type is None:
-            if not isinstance(self.fn, basestring):
+            if not isinstance(self.fn, str):
                 raise ValueError('Checking file_type not supported for '
                                  'non-file BedTools. Use .saveas() to '
                                  'save as a temp file first.')
@@ -889,7 +889,7 @@ class BedTool(object):
         else:
             fh = open(self._tmp(), "w")
             for f in self:
-                print >>fh, "\t".join(map(str, [f[attr] for attr in indexes]))
+                print("\t".join(map(str, [f[attr] for attr in indexes])), file=fh)
             fh.close()
             return BedTool(fh.name)
 
@@ -913,7 +913,7 @@ class BedTool(object):
         created
         """
         # Plain ol' filename
-        if isinstance(self.fn, basestring):
+        if isinstance(self.fn, str):
             if self._isbam:
                 # Note: BAM class takes filename or stream, so self.fn is OK
                 # here
@@ -949,7 +949,7 @@ class BedTool(object):
     def __repr__(self):
         if isinstance(self.fn, file):
             return '<BedTool(stream)>'
-        if isinstance(self.fn, basestring):
+        if isinstance(self.fn, str):
             if os.path.exists(self.fn) or self.remote:
                 return '<BedTool(%s)>' % self.fn
             else:
@@ -963,7 +963,7 @@ class BedTool(object):
         was created.  If self.fn is anything but a basestring, the iterable
         will be consumed.
         """
-        if isinstance(self.fn, basestring) and not self._isbam:
+        if isinstance(self.fn, str) and not self._isbam:
             return open(self.fn).read()
 
         return ''.join(str(i) for i in iter(self))
@@ -972,12 +972,12 @@ class BedTool(object):
         return self.count()
 
     def __eq__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, str):
             other_str = other
         elif isinstance(other, BedTool):
-            if (not isinstance(self.fn, basestring) or
+            if (not isinstance(self.fn, str) or
                 not isinstance(
-                    other.fn, basestring)):
+                    other.fn, str)):
                 raise NotImplementedError('Testing equality only supported for'
                                           ' BedTools that point to files')
         if str(self) == str(other):
@@ -1031,7 +1031,7 @@ class BedTool(object):
         <BLANKLINE>
 
         """
-        if not isinstance(self.fn, basestring):
+        if not isinstance(self.fn, str):
             raise NotImplementedError(
                 'head() not supported for non file-based BedTools')
         if as_string:
@@ -1040,7 +1040,7 @@ class BedTool(object):
             for i, line in enumerate(iter(self)):
                 if i == (n):
                     break
-                print line,
+                print(line, end=' ')
 
     def set_chromsizes(self, chromsizes):
         """
@@ -1060,7 +1060,7 @@ class BedTool(object):
             (0, 249250621)
 
         """
-        if isinstance(chromsizes, basestring):
+        if isinstance(chromsizes, str):
             self.chromsizes = pybedtools.chromsizes(chromsizes)
         elif isinstance(chromsizes, dict):
             self.chromsizes = chromsizes
@@ -1147,7 +1147,7 @@ class BedTool(object):
                 instream1 = instream1.fn
 
             # Filename? No pipe, just provide the file
-            if isinstance(instream1, basestring):
+            if isinstance(instream1, str):
                 kwargs[inarg1] = instream1
                 stdin = None
 
@@ -1177,7 +1177,7 @@ class BedTool(object):
                 instream2 = instream2.fn
 
             # Filename
-            if isinstance(instream2, basestring):
+            if isinstance(instream2, str):
                 kwargs[inarg2] = instream2
 
             # Otherwise we need to collapse it in order to send to BEDTools
@@ -1204,14 +1204,14 @@ class BedTool(object):
         cmds = [prog]
 
         # FIXME: the reverse-sort is a temp fix for issue #81.
-        for key, value in sorted(kwargs.items(), reverse=True):
+        for key, value in sorted(list(kwargs.items()), reverse=True):
             if isinstance(value, bool):
                 if value:
                     cmds.append('-' + key)
                 else:
                     continue
             elif isinstance(value, list) or isinstance(value, tuple):
-                value = map(str, value)
+                value = list(map(str, value))
                 try:
                     delim = list_delimiters[prog]
                 except KeyError:
@@ -1296,7 +1296,7 @@ class BedTool(object):
 
         # If it's a file-based BedTool -- which is likely, if we're trying to
         # remove invalid features -- then we need to parse it line by line.
-        if isinstance(self.fn, basestring):
+        if isinstance(self.fn, str):
             i = IntervalIterator(open(self.fn))
         else:
             i = IntervalIterator(self.fn)
@@ -1304,7 +1304,7 @@ class BedTool(object):
         def _generator():
             while True:
                 try:
-                    feature = i.next()
+                    feature = next(i)
                     if feature.start <= feature.stop:
                         yield feature
                     else:
@@ -1341,7 +1341,7 @@ class BedTool(object):
         if not isinstance(interval, Interval):
             raise ValueError("Need an Interval instance")
         fn = self.fn
-        if not isinstance(fn, basestring):
+        if not isinstance(fn, str):
             fn = self.saveas().fn
         if self._isbam:
             fn = self.bam_to_bed().fn
@@ -1369,7 +1369,7 @@ class BedTool(object):
         if not isinstance(interval, Interval):
             raise ValueError("Need an Interval instance")
         fn = self.fn
-        if not isinstance(fn, basestring):
+        if not isinstance(fn, str):
             fn = self.saveas().fn
         if self._isbam:
             fn = self.bam_to_bed().fn
@@ -1397,7 +1397,7 @@ class BedTool(object):
         if not isinstance(interval, Interval):
             raise ValueError("Need an Interval instance")
         fn = self.fn
-        if not isinstance(fn, basestring):
+        if not isinstance(fn, str):
             fn = self.saveas().fn
         if self._isbam:
             fn = self.bam_to_bed().fn
@@ -1516,9 +1516,9 @@ class BedTool(object):
         'GATGAGTCT'
 
         """
-        if isinstance(loc, basestring):
+        if isinstance(loc, str):
             chrom, start_end = loc.split(":")
-            start, end = map(int, start_end.split("-"))
+            start, end = list(map(int, start_end.split("-")))
             start -= 1
         else:
             chrom, start, end = loc[0], loc[1], loc[2]
@@ -2252,16 +2252,16 @@ class BedTool(object):
 
             if not(np.any(a == score)):
                 a = np.append(a, score)
-                a_len = np.array(range(len(a)))
+                a_len = np.array(list(range(len(a))))
             else:
-                a_len = np.array(range(len(a))) + 1.0
+                a_len = np.array(list(range(len(a)))) + 1.0
 
             a = np.sort(a)
             idx = [a == score]
             pct = (np.mean(a_len[idx]) / n) * 100.0
             return pct
 
-        if isinstance(other, basestring):
+        if isinstance(other, str):
             other = BedTool(other)
         else:
             assert isinstance(other, BedTool),\
@@ -2630,7 +2630,7 @@ class BedTool(object):
         assert len(others) > 0, 'You must specify at least one other bedfile!'
         other_beds = []
         for other in others:
-            if isinstance(other, basestring):
+            if isinstance(other, str):
                 other = BedTool(other)
             else:
                 assert isinstance(other, BedTool),\
@@ -2749,7 +2749,7 @@ class BedTool(object):
         >>> b == a_contents
         True
         """
-        if not isinstance(self.fn, basestring):
+        if not isinstance(self.fn, str):
             fn = self._collapse(self, fn=fn)
         else:
             shutil.move(self.fn, fn)
@@ -2767,7 +2767,7 @@ class BedTool(object):
         >>> len(b)
         2
         '''
-        idxs = range(len(self))
+        idxs = list(range(len(self)))
         if seed is not None:
             random.seed(seed)
         random.shuffle(idxs)
@@ -2830,7 +2830,7 @@ class BedTool(object):
         2 features for transcription factor 2
 
         """
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             setattr(self, key, value)
         return self
 
@@ -2838,7 +2838,7 @@ class BedTool(object):
         """
         Returns an IntervalFile of this BedTool for low-level interface.
         """
-        if not isinstance(self.fn, basestring):
+        if not isinstance(self.fn, str):
             fn = self._collapse(self.fn)
         else:
             fn = self.fn
@@ -2998,7 +2998,7 @@ class BedTool(object):
         # Complain if BAM or if not a file
         if self._isbam:
             raise ValueError("BAM not supported for converting to DataFrame")
-        if not isinstance(self.fn, basestring):
+        if not isinstance(self.fn, str):
             raise ValueError("use .saveas() to make sure self.fn is a file")
 
         try:
@@ -3031,7 +3031,7 @@ class BedTool(object):
         """
         if self._isbam:
             raise ValueError('tail() not yet implemented for BAM files')
-        if not isinstance(self.fn, basestring):
+        if not isinstance(self.fn, str):
             raise ValueError('tail() not implemented for non-file-based '
                              'BedTool objects.  Please use saveas() first.')
         bufsize = 8192
@@ -3069,7 +3069,7 @@ class BAM(object):
         if not settings._samtools_installed:
             helpers._check_for_samtools()
 
-        if isinstance(self.stream, basestring):
+        if isinstance(self.stream, str):
             self.cmds = [os.path.join(settings._samtools_path, 'samtools'),
                          'view', stream]
             if header_only:
@@ -3093,8 +3093,8 @@ class BAM(object):
     def __iter__(self):
         return self
 
-    def next(self):
-        line = self.p.stdout.next()
+    def __next__(self):
+        line = next(self.p.stdout)
 
         # If we only want the header, then short-circuit once we're out of
         # header lines

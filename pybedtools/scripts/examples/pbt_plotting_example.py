@@ -94,7 +94,7 @@ if __name__ == "__main__":
     ax.legend(loc='best')
     ax.axis('tight')
 
-    print'%.2fs' % (time.time() - t0)
+    print('%.2fs' % (time.time() - t0))
 
 
     plt.show()

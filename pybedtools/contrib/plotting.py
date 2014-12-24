@@ -76,7 +76,7 @@ class Track(collections.PolyCollection):
         >>> limits = ax.axis('tight')
         """
         if isinstance(features, pybedtools.BedTool)\
-                and isinstance(features.fn, basestring):
+                and isinstance(features.fn, str):
             self.features = features
         else:
             self.features = pybedtools.BedTool(features).saveas()
@@ -198,10 +198,10 @@ class BinaryHeatmap(object):
         _bts = []
         for bt in bts:
             if isinstance(bt, pybedtools.BedTool):
-                if not isinstance(bt.fn, basestring):
+                if not isinstance(bt.fn, str):
                     bt = bt.saveas()
                 _bts.append(bt.fn)
-            elif isinstance(bt, basestring):
+            elif isinstance(bt, str):
                 _bts.append(bt)
 
         # Do the multi-intersection.
@@ -228,7 +228,7 @@ class BinaryHeatmap(object):
             _classified_intervals[cls].append(item)
 
         self.classified_intervals = {}
-        for k, v in _classified_intervals.items():
+        for k, v in list(_classified_intervals.items()):
             self.classified_intervals[k] = pybedtools.BedTool(v)
 
         self.matrix = np.array(self.matrix, dtype=int)
@@ -242,7 +242,7 @@ class BinaryHeatmap(object):
         # that array's [0,0] is in the upper left corner.
         mappable = ax.imshow(self.matrix[self.sort_ind], aspect='auto', interpolation='nearest',
                 cmap=matplotlib.cm.binary, origin='upper')
-        ax.set_xticks(range(len(self.names)))
+        ax.set_xticks(list(range(len(self.names))))
         ax.set_xticklabels(self.names, rotation=90)
         if ax is None:
             fig.subplots_adjust(left=0.25)
@@ -295,7 +295,7 @@ def binary_summary(d):
     Convenience function useful printing the results from binary_heatmap().
     """
     s = []
-    for item in sorted(d.items(), key=lambda x: x[1], reverse=True):
+    for item in sorted(list(d.items()), key=lambda x: x[1], reverse=True):
         s.append('%s : %s' % (item))
     return '\n'.join(s)
 
@@ -446,7 +446,7 @@ class BedToolsDemo(TrackCollection):
         config = [list(i) for i in config]
         if data_path:
             for conf in config:
-                if not isinstance(conf[0], basestring):
+                if not isinstance(conf[0], str):
                     raise ValueError("data_path was specified, so you need "
                             "filenames in the config")
                 conf[0] = os.path.join(data_path, conf[0])

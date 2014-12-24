@@ -92,7 +92,7 @@ def main():
               'intron and exon:')
 
     for label, reads in zip(labels, results):
-        print '%s %s' % (label, reads)
+        print('%s %s' % (label, reads))
 
     pybedtools.cleanup(verbose=False)
 

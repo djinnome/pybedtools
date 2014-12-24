@@ -82,8 +82,8 @@ _prog_names = {
     'fisher': 'fisher',
 }
 
-_old_names = _prog_names.keys()
-_new_names = _prog_names.values()
+_old_names = list(_prog_names.keys())
+_new_names = list(_prog_names.values())
 
 _column_names = {
     'bed': ['chrom', 'start', 'end', 'name', 'score', 'strand', 'thickStart',

@@ -9,7 +9,7 @@ import struct
 import atexit
 import pybedtools
 
-import settings
+from . import settings
 
 BUFSIZE = 1
 
@@ -182,7 +182,7 @@ def find_tagged(tag):
     Returns the bedtool object with tagged with *tag*.  Useful for tracking
     down bedtools you made previously.
     """
-    for key, item in _tags.iteritems():
+    for key, item in _tags.items():
         try:
             if item._tag == tag:
                 return item
@@ -229,11 +229,11 @@ class HistoryStep(object):
         try:
             self.method = method._name
         except AttributeError:
-            self.method = method.func_name
+            self.method = method.__name__
         self.args = args
         self.kwargs = kwargs
         self.fn = bedtool_instance.fn
-        tag = ''.join(random.choice(string.lowercase) for _ in xrange(8))
+        tag = ''.join(random.choice(string.lowercase) for _ in range(8))
         self.parent_tag = parent_tag
         self.result_tag = result_tag
 
@@ -243,7 +243,7 @@ class HistoryStep(object):
         """
         if isinstance(arg, pybedtools.BedTool):
             arg = arg.fn
-        if isinstance(arg, basestring):
+        if isinstance(arg, str):
             arg = '"%s"' % arg
         return arg
 
@@ -261,7 +261,7 @@ class HistoryStep(object):
         args_string = ','.join(map(self._clean_arg, self.args))
         kwargs_string = ','.join(
             ['%s=%s' % (i[0], self._clean_arg(i[1]))
-             for i in self.kwargs.items()])
+             for i in list(self.kwargs.items())])
         # stick a comma on the end if there's something here
         if len(args_string) > 0:
             args_string += ', '
@@ -306,7 +306,7 @@ def cleanup(verbose=False, remove_all=False):
         return
     for fn in pybedtools.BedTool.TEMPFILES:
         if verbose:
-            print 'removing', fn
+            print('removing', fn)
         if os.path.exists(fn):
             os.unlink(fn)
     if remove_all:
@@ -440,8 +440,8 @@ def call_bedtools(cmds, tmpfn=None, stdin=None, check_stderr=None):
             raise BEDToolsError(subprocess.list2cmdline(cmds), stderr)
 
     except (OSError, IOError) as err:
-        print '%s: %s' % (type(err), os.strerror(err.errno))
-        print 'The command was:\n\n\t%s\n' % subprocess.list2cmdline(cmds)
+        print('%s: %s' % (type(err), os.strerror(err.errno)))
+        print('The command was:\n\n\t%s\n' % subprocess.list2cmdline(cmds))
 
         problems = {
             2: ('* Did you spell the command correctly?',
@@ -452,8 +452,8 @@ def call_bedtools(cmds, tmpfn=None, stdin=None, check_stderr=None):
                  'a bug report so that this can be fixed',)
         }
 
-        print 'Things to check:'
-        print '\n\t' + '\n\t'.join(problems[err.errno])
+        print('Things to check:')
+        print('\n\t' + '\n\t'.join(problems[err.errno]))
         raise OSError('See above for commands that gave the error')
 
     return output
@@ -557,7 +557,7 @@ def close_or_delete(*args):
     streaming or file-based version.
     """
     for x in args:
-        if isinstance(x.fn, basestring):
+        if isinstance(x.fn, str):
             os.unlink(x.fn)
         elif hasattr(x.fn, 'close'):
             x.fn.close()
@@ -569,7 +569,7 @@ def _jaccard_output_to_dict(s, **kwargs):
     jaccard method doesn't return an interval file, rather, it returns a short
     summary of results.  Here, we simply parse it into a dict for convenience.
     """
-    if isinstance(s, basestring):
+    if isinstance(s, str):
         s = open(s).read()
     if hasattr(s, 'next'):
         s = ''.join(i for i in s)
@@ -580,7 +580,7 @@ def _jaccard_output_to_dict(s, **kwargs):
     data[1] = int(data[1])
     data[2] = float(data[2])
     data[3] = int(data[3])
-    return dict(zip(header, data))
+    return dict(list(zip(header, data)))
 
 
 def _reldist_output_handler(s, **kwargs):
@@ -592,7 +592,7 @@ def _reldist_output_handler(s, **kwargs):
     """
     if 'detail' in kwargs:
         return pybedtools.BedTool(s)
-    if isinstance(s, basestring):
+    if isinstance(s, str):
         iterable = open(s)
     if hasattr(s, 'next'):
         iterable = s
@@ -642,7 +642,7 @@ def string_to_interval(s):
 
     If it's already an interval, then return it as-is.
     """
-    if isinstance(s, basestring):
+    if isinstance(s, str):
         m = coord_re.search(s)
         if m.group('strand'):
             return pybedtools.create_interval_from_list([

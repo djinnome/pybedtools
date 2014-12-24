@@ -4,9 +4,9 @@ fn = pybedtools.example_filename('a.bed')
 
 def show_open_fds(func):
     doc = func.__doc__
-    print
-    print doc
-    print "." * len(doc)
+    print()
+    print(doc)
+    print("." * len(doc))
     orig_fds = pybedtools.helpers.n_open_fds()
     assert (max(func(fn)) - orig_fds) == 0
 
